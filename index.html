@@ -26,6 +26,16 @@
           <span class="value" id="level">1</span>
         </div>
 
+        <div class="panel-section" id="hs-panel">
+          <span class="label">HIGH SCORES</span>
+          <ol id="hs-list"></ol>
+          <div class="hs-stats">
+            <span>Mejor combo: <strong id="hs-best-combo">0</strong></span>
+            <span>Máx. líneas: <strong id="hs-max-lines">0</strong></span>
+          </div>
+          <button id="hs-reset-btn">Borrar records</button>
+        </div>
+
         <div class="panel-section">
           <span class="label">NEXT</span>
           <canvas id="next-canvas" width="120" height="120"></canvas>
@@ -48,6 +58,11 @@
       <div class="overlay-box">
         <p id="overlay-title">GAME OVER</p>
         <p id="overlay-score"></p>
+        <div id="hs-gameover" hidden>
+          <ol id="hs-gameover-list"></ol>
+          <input id="hs-name-input" type="text" maxlength="10" placeholder="Tu nombre">
+          <button id="hs-save-btn">Guardar</button>
+        </div>
         <button id="restart-btn">Reiniciar</button>
       </div>
     </div>

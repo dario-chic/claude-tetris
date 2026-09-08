@@ -104,11 +104,14 @@ function clearLines() {
     }
   }
   if (cleared) {
+    hsOnLinesCleared(cleared);
     lines += cleared;
     score += (LINE_SCORES[cleared] || 0) * level;
     level = Math.floor(lines / 10) + 1;
     dropInterval = Math.max(100, 1000 - (level - 1) * 90);
     updateHUD();
+  } else {
+    hsOnNoLinesCleared();
   }
 }
 
@@ -224,6 +227,7 @@ function endGame() {
   overlayTitle.textContent = 'GAME OVER';
   overlayScore.textContent = `Puntuación: ${score.toLocaleString()}`;
   overlay.classList.remove('hidden');
+  hsOnGameOver();
 }
 
 function togglePause() {
@@ -263,6 +267,7 @@ function init() {
   level = 1;
   paused = false;
   gameOver = false;
+  comboCount = 0;
   dropInterval = 1000;
   dropAccum = 0;
   lastTime = performance.now();
@@ -273,6 +278,144 @@ function init() {
   cancelAnimationFrame(animId);
   animId = requestAnimationFrame(loop);
 }
+
+// ==== FEATURE HIGH SCORES START ====
+
+const HS_SCORES_KEY = 'tetris.highscores';
+const HS_STATS_KEY = 'tetris.stats';
+const HS_MAX_ENTRIES = 5;
+
+const hsListEl = document.getElementById('hs-list');
+const hsBestComboEl = document.getElementById('hs-best-combo');
+const hsMaxLinesEl = document.getElementById('hs-max-lines');
+const hsResetBtnEl = document.getElementById('hs-reset-btn');
+const hsGameoverEl = document.getElementById('hs-gameover');
+const hsGameoverListEl = document.getElementById('hs-gameover-list');
+const hsNameInputEl = document.getElementById('hs-name-input');
+const hsSaveBtnEl = document.getElementById('hs-save-btn');
+
+let comboCount = 0;
+let bestCombo = 0;
+
+function hsLoadScores() {
+  try {
+    const raw = localStorage.getItem(HS_SCORES_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function hsLoadStats() {
+  try {
+    const raw = localStorage.getItem(HS_STATS_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return { bestCombo: parsed.bestCombo || 0, maxLines: parsed.maxLines || 0 };
+  } catch (e) {
+    return { bestCombo: 0, maxLines: 0 };
+  }
+}
+
+function hsSaveScore(name, scoreValue) {
+  const scores = hsLoadScores();
+  const cleanName = (name || '').trim().toUpperCase().slice(0, 10) || 'AAA';
+  const entry = { name: cleanName, score: scoreValue, date: new Date().toISOString() };
+  scores.push(entry);
+  scores.sort((a, b) => b.score - a.score);
+  scores.length = Math.min(scores.length, HS_MAX_ENTRIES);
+  try {
+    localStorage.setItem(HS_SCORES_KEY, JSON.stringify(scores));
+  } catch (e) {
+    // storage unavailable/full: keep going, just don't persist
+  }
+  return scores.includes(entry);
+}
+
+function hsRenderList(targetEl, scores, highlightEntry) {
+  targetEl.innerHTML = '';
+  if (!scores.length) {
+    const li = document.createElement('li');
+    li.className = 'hs-empty';
+    li.textContent = 'Sin récords todavía';
+    targetEl.appendChild(li);
+    return;
+  }
+  scores.forEach(entry => {
+    const li = document.createElement('li');
+    if (highlightEntry && entry.name === highlightEntry.name && entry.score === highlightEntry.score) {
+      li.classList.add('hs-highlight');
+    }
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = entry.name;
+    const scoreSpan = document.createElement('span');
+    scoreSpan.textContent = entry.score.toLocaleString();
+    li.appendChild(nameSpan);
+    li.appendChild(scoreSpan);
+    targetEl.appendChild(li);
+  });
+}
+
+function hsRenderPanel() {
+  hsRenderList(hsListEl, hsLoadScores(), null);
+  const stats = hsLoadStats();
+  hsBestComboEl.textContent = stats.bestCombo;
+  hsMaxLinesEl.textContent = stats.maxLines;
+}
+
+function hsResetScores() {
+  localStorage.removeItem(HS_SCORES_KEY);
+  hsRenderPanel();
+}
+
+function hsOnLinesCleared(cleared) {
+  comboCount++;
+  if (comboCount > bestCombo) bestCombo = comboCount;
+}
+
+function hsOnNoLinesCleared() {
+  comboCount = 0;
+}
+
+function hsOnGameOver() {
+  overlay.dataset.mode = 'gameover';
+  const scores = hsLoadScores();
+  hsRenderList(hsGameoverListEl, scores, null);
+  const qualifies = scores.length < HS_MAX_ENTRIES || score > scores[scores.length - 1].score;
+  hsGameoverEl.hidden = !qualifies;
+  hsNameInputEl.hidden = false;
+  hsSaveBtnEl.hidden = false;
+  hsNameInputEl.value = '';
+}
+
+hsSaveBtnEl.addEventListener('click', () => {
+  const nameValue = hsNameInputEl.value;
+  const saved = hsSaveScore(nameValue, score);
+  if (saved) {
+    const stats = hsLoadStats();
+    let statsChanged = false;
+    if (bestCombo > stats.bestCombo) { stats.bestCombo = bestCombo; statsChanged = true; }
+    if (lines > stats.maxLines) { stats.maxLines = lines; statsChanged = true; }
+    if (statsChanged) {
+      try {
+        localStorage.setItem(HS_STATS_KEY, JSON.stringify(stats));
+      } catch (e) {
+        // storage unavailable/full: keep going, just don't persist
+      }
+    }
+    const cleanName = (nameValue || '').trim().toUpperCase().slice(0, 10) || 'AAA';
+    hsRenderList(hsGameoverListEl, hsLoadScores(), { name: cleanName, score });
+    hsRenderPanel();
+    hsNameInputEl.hidden = true;
+    hsSaveBtnEl.hidden = true;
+  }
+});
+
+hsResetBtnEl.addEventListener('click', hsResetScores);
+
+hsRenderPanel();
+
+// ==== FEATURE HIGH SCORES END ====
 
 document.addEventListener('keydown', e => {
   if (e.code === 'KeyP') { togglePause(); return; }
