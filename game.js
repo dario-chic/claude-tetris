@@ -154,6 +154,8 @@ function spawn() {
 }
 
 function updateHUD() {
+  level = pmGameStartLevel + Math.floor(lines / 10);
+  dropInterval = Math.max(100, 1000 - (level - 1) * 90);
   scoreEl.textContent = score.toLocaleString();
   linesEl.textContent = lines;
   levelEl.textContent = level;
@@ -234,9 +236,12 @@ function togglePause() {
   if (gameOver) return;
   paused = !paused;
   if (!paused) {
+    overlay.dataset.mode = '';
+    overlay.classList.add('hidden');
     lastTime = performance.now();
     loop(lastTime);
   } else {
+    overlay.dataset.mode = 'pause';
     cancelAnimationFrame(animId);
     overlayTitle.textContent = 'PAUSA';
     overlayScore.textContent = '';
@@ -264,13 +269,15 @@ function init() {
   board = createBoard();
   score = 0;
   lines = 0;
-  level = 1;
+  level = pmStartLevel;
   paused = false;
   gameOver = false;
   comboCount = 0;
-  dropInterval = 1000;
+  dropInterval = Math.max(100, 1000 - (pmStartLevel - 1) * 90);
   dropAccum = 0;
   lastTime = performance.now();
+  pmGameStartLevel = pmStartLevel;
+  overlay.dataset.mode = '';
   next = randomPiece();
   spawn();
   updateHUD();
@@ -416,6 +423,43 @@ hsResetBtnEl.addEventListener('click', hsResetScores);
 hsRenderPanel();
 
 // ==== FEATURE HIGH SCORES END ====
+
+// ==== FEATURE PAUSE MENU START ====
+let pmStartLevel = 1;
+let pmGameStartLevel = 1;
+
+const pmMenu = document.getElementById('pm-menu');
+const pmResumeBtn = document.getElementById('pm-resume-btn');
+const pmControlsBtn = document.getElementById('pm-controls-btn');
+const pmControlsList = document.getElementById('pm-controls-list');
+const pmLevelSelect = document.getElementById('pm-level-select');
+const pmRestartBtn = document.getElementById('pm-restart-btn');
+
+for (let i = 1; i <= 15; i++) {
+  const pmOption = document.createElement('option');
+  pmOption.value = i;
+  pmOption.textContent = `Nivel ${i}`;
+  pmLevelSelect.appendChild(pmOption);
+}
+
+pmResumeBtn.addEventListener('click', () => {
+  if (paused) togglePause();
+});
+
+pmControlsBtn.addEventListener('click', () => {
+  pmControlsList.hidden = !pmControlsList.hidden;
+});
+
+pmLevelSelect.addEventListener('change', () => {
+  pmStartLevel = parseInt(pmLevelSelect.value, 10);
+});
+
+pmRestartBtn.addEventListener('click', init);
+
+document.addEventListener('keydown', e => {
+  if (e.code === 'Escape') togglePause();
+});
+// ==== FEATURE PAUSE MENU END ====
 
 document.addEventListener('keydown', e => {
   if (e.code === 'KeyP') { togglePause(); return; }
