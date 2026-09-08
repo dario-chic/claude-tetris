@@ -163,18 +163,11 @@ function updateHUD() {
 
 function drawBlock(context, x, y, colorIndex, size, alpha) {
   if (!colorIndex) return;
-  const color = COLORS[colorIndex];
-  context.globalAlpha = alpha ?? 1;
-  context.fillStyle = color;
-  context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
-  // highlight
-  context.fillStyle = 'rgba(255,255,255,0.12)';
-  context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
-  context.globalAlpha = 1;
+  (thmRenderers[currentTheme] || thmRenderers.retro)(context, x, y, colorIndex, size, alpha ?? 1);
 }
 
 function drawGrid() {
-  ctx.strokeStyle = '#22222e';
+  ctx.strokeStyle = thmGridColors[currentTheme] || thmGridColors.retro;
   ctx.lineWidth = 0.5;
   for (let c = 1; c < COLS; c++) {
     ctx.beginPath();
@@ -460,6 +453,140 @@ document.addEventListener('keydown', e => {
   if (e.code === 'Escape') togglePause();
 });
 // ==== FEATURE PAUSE MENU END ====
+
+// ==== FEATURE THEMES START ====
+
+const thmPalettes = {
+  retro: COLORS,
+  pastel: [
+    null,
+    '#a8e6e6', // I
+    '#fff2b3', // O
+    '#e0b3e6', // T
+    '#c3e8c3', // S
+    '#f5b8b8', // Z
+    '#c3dcf5', // J
+    '#ffd9b3', // L
+  ],
+};
+
+const thmGridColors = {
+  retro: '#22222e',
+  neon: 'rgba(0, 255, 255, 0.15)',
+  pastel: '#d8d8e8',
+  pixel: '#33333e',
+};
+
+let currentTheme = 'retro';
+
+function thmDrawRetro(context, x, y, colorIndex, size, alpha) {
+  if (!colorIndex) return;
+  const color = thmPalettes.retro[colorIndex];
+  context.globalAlpha = alpha ?? 1;
+  context.fillStyle = color;
+  context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
+  // highlight
+  context.fillStyle = 'rgba(255,255,255,0.12)';
+  context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
+  context.globalAlpha = 1;
+}
+
+function thmDrawNeon(context, x, y, colorIndex, size, alpha) {
+  if (!colorIndex) return;
+  const color = COLORS[colorIndex];
+  context.globalAlpha = alpha ?? 1;
+  context.shadowBlur = 8;
+  context.shadowColor = color;
+  context.fillStyle = color;
+  context.fillRect(x * size + 2, y * size + 2, size - 4, size - 4);
+  context.shadowBlur = 0;
+  context.globalAlpha = 1;
+}
+
+function thmDrawPastel(context, x, y, colorIndex, size, alpha) {
+  if (!colorIndex) return;
+  const color = thmPalettes.pastel[colorIndex];
+  context.globalAlpha = alpha ?? 1;
+  context.fillStyle = color;
+  const px = x * size + 1;
+  const py = y * size + 1;
+  const s = size - 2;
+  const radius = Math.min(6, s / 2);
+  context.beginPath();
+  if (typeof context.roundRect === 'function') {
+    context.roundRect(px, py, s, s, radius);
+  } else {
+    context.moveTo(px + radius, py);
+    context.arcTo(px + s, py, px + s, py + s, radius);
+    context.arcTo(px + s, py + s, px, py + s, radius);
+    context.arcTo(px, py + s, px, py, radius);
+    context.arcTo(px, py, px + s, py, radius);
+    context.closePath();
+  }
+  context.fill();
+  context.globalAlpha = 1;
+}
+
+function thmDrawPixel(context, x, y, colorIndex, size, alpha) {
+  if (!colorIndex) return;
+  const color = COLORS[colorIndex];
+  context.globalAlpha = alpha ?? 1;
+  const px = x * size + 1;
+  const py = y * size + 1;
+  const s = size - 2;
+  const cells = 3;
+  const cellSize = s / cells;
+  context.fillStyle = color;
+  context.fillRect(px, py, s, s);
+  context.fillStyle = 'rgba(0,0,0,0.18)';
+  for (let r = 0; r < cells; r++) {
+    for (let c = 0; c < cells; c++) {
+      if ((r + c) % 2 === 0) {
+        context.fillRect(px + c * cellSize, py + r * cellSize, cellSize, cellSize);
+      }
+    }
+  }
+  context.globalAlpha = 1;
+}
+
+const thmRenderers = {
+  retro: thmDrawRetro,
+  neon: thmDrawNeon,
+  pastel: thmDrawPastel,
+  pixel: thmDrawPixel,
+};
+
+function thmValidTheme(theme) {
+  return thmRenderers[theme] ? theme : 'retro';
+}
+
+const thmSelect = document.getElementById('thm-select');
+
+let thmStored = 'retro';
+try {
+  thmStored = localStorage.getItem('tetris.theme') || 'retro';
+} catch (e) {
+  thmStored = 'retro';
+}
+currentTheme = thmValidTheme(thmStored);
+document.body.dataset.theme = currentTheme;
+if (thmSelect) thmSelect.value = currentTheme;
+
+if (thmSelect) {
+  thmSelect.addEventListener('change', () => {
+    currentTheme = thmValidTheme(thmSelect.value);
+    try {
+      localStorage.setItem('tetris.theme', currentTheme);
+    } catch (e) {
+      // localStorage unavailable (private mode / disabled storage) - theme still applies for this session
+    }
+    document.body.dataset.theme = currentTheme;
+    draw();
+    drawNext();
+  });
+}
+
+// ==== FEATURE THEMES END ====
 
 document.addEventListener('keydown', e => {
   if (e.code === 'KeyP') { togglePause(); return; }
