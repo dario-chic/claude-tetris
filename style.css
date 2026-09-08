@@ -160,3 +160,117 @@ kbd {
 #restart-btn:hover {
   background: #9bbdff;
 }
+
+/* ==== FEATURE HIGH SCORES ==== */
+
+#hs-list,
+#hs-gameover-list {
+  list-style: decimal inside;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+  color: #ccc;
+}
+
+#hs-list li,
+#hs-gameover-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+#hs-list li.hs-empty,
+#hs-gameover-list li.hs-empty {
+  color: #555570;
+  justify-content: flex-start;
+}
+
+.hs-highlight {
+  background: rgba(122, 162, 247, 0.18);
+  color: #7aa2f7;
+  font-weight: 700;
+}
+
+.hs-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  color: #888;
+}
+
+.hs-stats strong {
+  color: #7aa2f7;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+#hs-reset-btn {
+  margin-top: 4px;
+  background: transparent;
+  color: #888;
+  border: 1px solid #3a3a5a;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: background 0.15s, color 0.15s;
+}
+
+#hs-reset-btn:hover {
+  background: #22223a;
+  color: #e57373;
+}
+
+#hs-gameover {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: stretch;
+  width: 100%;
+}
+
+/* Only ever show the game-over high-score block while the shared overlay is
+   actually in 'gameover' mode — keeps stale state from a previous game from
+   leaking into a later pause screen. */
+#overlay:not([data-mode="gameover"]) #hs-gameover {
+  display: none;
+}
+
+#hs-name-input {
+  background: #1a1a25;
+  border: 1px solid #3a3a5a;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #e0e0e0;
+  font-family: inherit;
+  text-align: center;
+}
+
+#hs-name-input:focus {
+  outline: none;
+  border-color: #7aa2f7;
+}
+
+#hs-save-btn {
+  background: #7aa2f7;
+  color: #0f0f17;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 20px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: background 0.15s;
+}
+
+#hs-save-btn:hover {
+  background: #9bbdff;
+}
